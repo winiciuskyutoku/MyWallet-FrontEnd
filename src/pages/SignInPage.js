@@ -23,6 +23,7 @@ export default function SignInPage() {
       .then((sucess) => {
         setToken(sucess.data.token)
         setUsername(sucess.data.getUsername.name)
+        localStorage.setItem("token", JSON.stringify({username: sucess.data.getUsername.name, token: sucess.data.token}))
         navigate("/home")
       })
       .catch((fail) => alert(fail.data))

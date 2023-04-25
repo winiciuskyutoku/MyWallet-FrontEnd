@@ -1,54 +1,125 @@
 import styled from "styled-components"
 import { BiExit } from "react-icons/bi"
 import { AiOutlineMinusCircle, AiOutlinePlusCircle } from "react-icons/ai"
+import { Link } from "react-router-dom"
+import { port } from "../port"
+import { useContext, useState } from "react"
+import UserContext from "../contexts/UserContext"
+import { useEffect } from "react"
+import axios from "axios"
 
 export default function HomePage() {
-  return (
-    <HomeContainer>
-      <Header>
-        <h1>Olá, Fulano</h1>
-        <BiExit />
-      </Header>
-
-      <TransactionsContainer>
-        <ul>
-          <ListItemContainer>
-            <div>
-              <span>30/11</span>
-              <strong>Almoço mãe</strong>
-            </div>
-            <Value color={"negativo"}>120,00</Value>
-          </ListItemContainer>
-
-          <ListItemContainer>
-            <div>
-              <span>15/11</span>
-              <strong>Salário</strong>
-            </div>
-            <Value color={"positivo"}>3000,00</Value>
-          </ListItemContainer>
-        </ul>
-
-        <article>
-          <strong>Saldo</strong>
-          <Value color={"positivo"}>2880,00</Value>
-        </article>
-      </TransactionsContainer>
 
 
-      <ButtonsContainer>
-        <button>
-          <AiOutlinePlusCircle />
-          <p>Nova <br /> entrada</p>
-        </button>
-        <button>
-          <AiOutlineMinusCircle />
-          <p>Nova <br />saída</p>
-        </button>
-      </ButtonsContainer>
+  const [balanceList, setBalanceList] = useState([])
+  const [values, setvalues] = useState(0)
+  const { token, username } = useContext(UserContext)
 
-    </HomeContainer>
-  )
+  console.log(values, "VALORES")
+
+  useEffect(() => {
+    const url = `${port}/home`
+    const config = {
+      headers: { Authorization: `Bearer ${token}` }
+    }
+
+    axios.get(url, config).then(sucess => {
+      setBalanceList(sucess.data)
+
+      const valores = sucess.data
+
+      const filteredValues = valores.map(v => {
+        if(v.tipo == "entrada"){
+          return v.value
+        } else if (v.tipo == "saida"){
+          return -v.value
+        }
+      })
+
+      setvalues(filteredValues.reduce((prev, e) => prev + e, 0))
+      
+    }).catch(fail => console.log(fail.data))
+  }, [])
+
+
+  if (balanceList.length === 0) {
+    return (
+      <HomeContainer>
+        <Header>
+          <h1>Olá, {username}</h1>
+          <BiExit />
+        </Header>
+        <TransactionsContainer>
+          <ul>
+
+          </ul>
+
+          <article>
+            <strong>Saldo</strong>
+            <Value color={"positivo"}></Value>
+          </article>
+        </TransactionsContainer>
+
+
+        <ButtonsContainer>
+          <StyledLink to={"/nova-transacao/entrada"}>
+            <AiOutlinePlusCircle />
+            <p>Nova <br /> entrada</p>
+          </StyledLink>
+          <StyledLink to={"/nova-transacao/saida"}>
+            <AiOutlineMinusCircle />
+            <p>Nova <br />saída</p>
+          </StyledLink>
+        </ButtonsContainer>
+      </HomeContainer>
+
+    )
+  } else {
+    return (
+      <HomeContainer>
+        <Header>
+          <h1>Olá, {username}</h1>
+          <BiExit />
+        </Header>
+
+        <TransactionsContainer>
+          <ul>
+            {balanceList.map(e => {
+              return (
+                <ListItemContainer>
+                  <div>
+                    <span>{e.today}</span>
+                    <strong>{e.description}</strong>
+                  </div>
+                  <Value color={e.tipo === "entrada" ? "positivo" : "negativo"}>{e.value}</Value>
+                </ListItemContainer>
+              )
+            })}
+          </ul>
+
+          <article>
+            <strong>Saldo</strong>
+            <Value color={values >= 0 ? "positivo" : "negativo"}>{values}</Value>
+          </article>
+        </TransactionsContainer>
+
+
+        <ButtonsContainer>
+          <StyledLink to={"/nova-transacao/entrada"}>
+            <AiOutlinePlusCircle />
+            <p>Nova <br /> entrada</p>
+          </StyledLink>
+          <StyledLink to={"/nova-transacao/saida"}>
+            <AiOutlineMinusCircle />
+            <p>Nova <br />saída</p>
+          </StyledLink>
+        </ButtonsContainer>
+
+      </HomeContainer>
+    )
+  }
+
+
 }
 
 const HomeContainer = styled.div`
@@ -88,19 +159,6 @@ const ButtonsContainer = styled.section`
   margin-bottom: 0;
   display: flex;
   gap: 15px;
-  
-  button {
-    width: 50%;
-    height: 115px;
-    font-size: 22px;
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    p {
-      font-size: 18px;
-    }
-  }
 `
 const Value = styled.div`
   font-size: 16px;
@@ -117,5 +175,21 @@ const ListItemContainer = styled.li`
   div span {
     color: #c6c6c6;
     margin-right: 10px;
+  }
+`
+
+const StyledLink = styled(Link)`
+  width: 50%;
+  height: 115px;
+  font-size: 22px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background-color: #A328D6;
+  padding: 20px;
+
+  p{
+    font-size: 18px;
   }
 `
