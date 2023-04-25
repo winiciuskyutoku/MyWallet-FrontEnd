@@ -1,7 +1,7 @@
 import styled from "styled-components"
 import { BiExit } from "react-icons/bi"
 import { AiOutlineMinusCircle, AiOutlinePlusCircle } from "react-icons/ai"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { port } from "../port"
 import { useContext, useState } from "react"
 import UserContext from "../contexts/UserContext"
@@ -10,14 +10,18 @@ import axios from "axios"
 
 export default function HomePage() {
 
-
+  const lsUser = JSON.parse(localStorage.getItem("token"))
   const [balanceList, setBalanceList] = useState([])
   const [values, setvalues] = useState(0)
   const { token, username } = useContext(UserContext)
 
-  console.log(values, "VALORES")
-
+  const navigate = useNavigate()
+  
   useEffect(() => {
+    if(lsUser === null || lsUser === undefined){
+      navigate("/")
+    }
+
     const url = `${port}/home`
     const config = {
       headers: { Authorization: `Bearer ${token}` }
@@ -29,10 +33,11 @@ export default function HomePage() {
       const valores = sucess.data
 
       const filteredValues = valores.map(v => {
-        if(v.tipo == "entrada"){
-          return v.value
-        } else if (v.tipo == "saida"){
-          return -v.value
+
+        if(v.tipo === "entrada"){
+          return Number(v.value)
+        } else if (v.tipo === "saida"){
+          return Number(-v.value)
         }
       })
 
@@ -41,24 +46,30 @@ export default function HomePage() {
     }).catch(fail => console.log(fail.data))
   }, [])
 
+  function logout(){
+    const url = `${port}/sessions`
+
+    console.log(token)
+    axios.delete(url, {userToken: token})
+    .then(() => {
+      localStorage.removeItem("token")
+      navigate("/")
+    })
+    .catch(fail => console.log(fail))
+  }
 
   if (balanceList.length === 0) {
     return (
       <HomeContainer>
         <Header>
           <h1>Olá, {username}</h1>
-          <BiExit />
+          <BiExit onClick={logout}/>
         </Header>
-        <TransactionsContainer>
-          <ul>
-
-          </ul>
-
-          <article>
-            <strong>Saldo</strong>
-            <Value color={"positivo"}></Value>
-          </article>
-        </TransactionsContainer>
+        <EmptyContainer>
+          <p>
+            Nao ha registros de entrada ou saida
+          </p>
+        </EmptyContainer>
 
 
         <ButtonsContainer>
@@ -79,7 +90,7 @@ export default function HomePage() {
       <HomeContainer>
         <Header>
           <h1>Olá, {username}</h1>
-          <BiExit />
+          <BiExit onClick={logout}/>
         </Header>
 
         <TransactionsContainer>
@@ -99,7 +110,7 @@ export default function HomePage() {
 
           <article>
             <strong>Saldo</strong>
-            <Value color={values >= 0 ? "positivo" : "negativo"}>{values}</Value>
+            <Value color={values >= 0 ? "positivo" : "negativo"}>{values.toFixed(2)}</Value>
           </article>
         </TransactionsContainer>
 
@@ -154,6 +165,22 @@ const TransactionsContainer = styled.article`
     }
   }
 `
+
+const EmptyContainer = styled.article`
+  flex-grow: 1;
+  background-color: #fff;
+  color: #000;
+  border-radius: 5px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  p {
+    color: #868686;
+  }
+`
+
 const ButtonsContainer = styled.section`
   margin-top: 15px;
   margin-bottom: 0;

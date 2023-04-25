@@ -5,12 +5,22 @@ import axios from "axios"
 import UserContext from "../contexts/UserContext"
 import {useContext, useState} from "react"
 import { port } from "../port"
+import { useEffect } from "react"
 
 export default function SignInPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const lsUser = JSON.parse(localStorage.getItem("token"))
 
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if(lsUser === null){
+      navigate("/")
+    } else {
+      navigate("/home")
+    }
+  }, [])
 
   const {setUsername, setToken} = useContext(UserContext)
 
@@ -26,7 +36,7 @@ export default function SignInPage() {
         localStorage.setItem("token", JSON.stringify({username: sucess.data.getUsername.name, token: sucess.data.token}))
         navigate("/home")
       })
-      .catch((fail) => alert(fail.data))
+      .catch((fail) => alert(fail.response.data))
   }
 
   return (
